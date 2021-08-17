@@ -276,7 +276,7 @@ public SQL_Callback_SelectClientAuthorized(Handle:hOwner, Handle:hQuery, const S
 			decl iEnd, iTime;
 			if((iEnd = SQL_FetchInt(hQuery, 0)) > (iTime = GetTime()) && !VIP_IsClientVIP(iClient))
 			{
-				VIP_SetClientVIP(iClient, iEnd - iTime, _, g_sTestGroup, false);
+				VIP_GiveClientVIP(_, iClient, iEnd - iTime, g_sTestGroup, false);
 			}
 		}
 	}
@@ -286,7 +286,7 @@ GiveVIPToClient(iClient, bool:bUpdate = false)
 {
 	decl iSeconds, String:sQuery[256], String:sAuth[32];
 	iSeconds = VIP_TimeToSeconds(g_iTestTime);
-	VIP_SetClientVIP(iClient, iSeconds, _, g_sTestGroup, false);
+	VIP_GiveClientVIP(_, iClient, iSeconds, g_sTestGroup, false);
 	VIP_GetTimeFromStamp(sQuery, sizeof(sQuery), iSeconds, LANG_SERVER);
 
 	GetClientAuthId(iClient, AuthId_Steam2, sAuth, sizeof(sAuth));
