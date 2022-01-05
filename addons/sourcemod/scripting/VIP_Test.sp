@@ -52,7 +52,7 @@ public OnPluginStart()
 {
 	decl Handle:hCvar;
 
-	hCvar = CreateConVar("sm_vip_test_group", "test_vip", "Группа для тестового VIP-статуса / Test VIP group");
+	hCvar = CreateConVar("sm_vip_test_group", "Test VIP", "Группа для тестового VIP-статуса / Test VIP group");
 	HookConVarChange(hCvar, OnTestGroupChange);
 	GetConVarString(hCvar, g_sTestGroup, sizeof(g_sTestGroup));
 	
