@@ -38,7 +38,7 @@ public Plugin:myinfo =
 	name = "[VIP] Test",
 	author = "Loneypro",
 	description = "Players can test vip features for a set of time",
-	version = "1.0.3",
+	version = "1.0.301",
 	url = ""
 };
 
@@ -291,7 +291,7 @@ GiveVIPToClient(iClient, bool:bUpdate = false)
 
 	GetClientAuthId(iClient, AuthId_Steam2, sAuth, sizeof(sAuth));
 	
-	VIP_LogMessage("Игрок %N (%s) получил тестовый VIP-статус (Группа: %s, Длительность: %s)", iClient, sAuth, g_sTestGroup, sQuery);
+	VIP_LogMessage("Player %N (%s) received a VIP-Test status (Group: %s, Duration: %s)", iClient, sAuth, g_sTestGroup, sQuery);
 
 	if(bUpdate)
 	{
