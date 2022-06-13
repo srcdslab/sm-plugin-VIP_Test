@@ -38,7 +38,7 @@ public Plugin:myinfo =
 	name = "[VIP] Test",
 	author = "Loneypro",
 	description = "Players can test vip features for a set of time",
-	version = "1.0.301",
+	version = "1.0.4",
 	url = ""
 };
 
