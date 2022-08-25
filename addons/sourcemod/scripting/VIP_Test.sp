@@ -27,13 +27,15 @@
 		1.0.3 -	При попытке взять VIP-статус повторно будет показано сколько времени осталось.
 				Добавлена поддержка MySQL.
 				Изменено сообщение в лог.
+		1.0.4 - Update syntax to SM 1.11
 */
 #pragma semicolon 1
+#pragma newdecls required
 
 #include <sourcemod>
 #include <vip_core>
 
-public Plugin:myinfo =
+public Plugin myinfo =
 {
 	name = "[VIP] Test",
 	author = "Loneypro",
@@ -42,27 +44,25 @@ public Plugin:myinfo =
 	url = ""
 };
 
-new Handle:g_hDatabase,
-	bool:g_bDBMySQL,
-	g_iTestTime,
-	g_iTestInterval,
-	String:g_sTestGroup[64];
+Handle g_hDatabase;
+bool g_bDBMySQL;
+int g_iTestTime;
+int g_iTestInterval;
+char g_sTestGroup[64];
 
-public OnPluginStart()
+public void OnPluginStart()
 {
-	decl Handle:hCvar;
-
-	hCvar = CreateConVar("sm_vip_test_group", "Test VIP", "Группа для тестового VIP-статуса / Test VIP group");
-	HookConVarChange(hCvar, OnTestGroupChange);
+	ConVar hCvar = CreateConVar("sm_vip_test_group", "Test VIP", "Группа для тестового VIP-статуса / Test VIP group");
+	hCvar.AddChangeHook(OnTestGroupChange);
 	GetConVarString(hCvar, g_sTestGroup, sizeof(g_sTestGroup));
 	
-	hCvar = CreateConVar("sm_vip_test_time", "120", "На сколько времени выдавать тестовый VIP-статус (значение зависит от sm_vip_time_mode) / VIP-Test duration (value depends on sm_vip_time_mode)", 0, true, 0.0);
-	HookConVarChange(hCvar, OnTestTimeChange);
-	g_iTestTime = GetConVarInt(hCvar);
+	ConVar hCvar1 = CreateConVar("sm_vip_test_time", "120", "На сколько времени выдавать тестовый VIP-статус (значение зависит от sm_vip_time_mode) / VIP-Test duration (value depends on sm_vip_time_mode)", 0, true, 0.0);
+	hCvar1.AddChangeHook(OnTestTimeChange);
+	g_iTestTime = hCvar1.IntValue;
 	
-	hCvar = CreateConVar("sm_vip_test_interval", "3600", "Через сколько времени можно повторно брать тестовый VIP-статус (значение зависит от sm_vip_time_mode) (0 - Запретить брать повторно) / How often player can request test VIP status (value depends on sm_vip_time_mode) (0 - deny new requests)");
-	HookConVarChange(hCvar, OnTestIntervalChange);
-	g_iTestInterval = GetConVarInt(hCvar);
+	ConVar hCvar2 = CreateConVar("sm_vip_test_interval", "3600", "Через сколько времени можно повторно брать тестовый VIP-статус (значение зависит от sm_vip_time_mode) (0 - Запретить брать повторно) / How often player can request test VIP status (value depends on sm_vip_time_mode) (0 - deny new requests)");
+	hCvar2.AddChangeHook(OnTestIntervalChange);
+	g_iTestInterval = hCvar2.IntValue;
 
 	AutoExecConfig(true, "vip_test", "vip");
 	
@@ -77,11 +77,20 @@ public OnPluginStart()
 	LoadTranslations("vip_core.phrases");
 }
 
-public OnTestTimeChange(Handle:hCvar, const String:oldValue[], const String:newValue[])			g_iTestTime = GetConVarInt(hCvar);
-public OnTestIntervalChange(Handle:hCvar, const String:oldValue[], const String:newValue[])		g_iTestInterval = GetConVarInt(hCvar);
-public OnTestGroupChange(Handle:hCvar, const String:oldValue[], const String:newValue[])			strcopy(g_sTestGroup, sizeof(g_sTestGroup), newValue);
+public void OnTestTimeChange(ConVar hCvar, const char[] oldVal, const char[] newVal)
+{
+	g_iTestTime = GetConVarInt(hCvar);
+}
+public void OnTestIntervalChange(ConVar hCvar, const char[] oldVal, const char[] newVal)
+{
+	g_iTestInterval = GetConVarInt(hCvar);
+}
+public void OnTestGroupChange(ConVar hCvar, const char[] oldVal, const char[] newVal)
+{
+	strcopy(g_sTestGroup, sizeof(g_sTestGroup), newVal);
+}
 
-Connect_DB()
+stock void Connect_DB()
 {
 	if (SQL_CheckConfig("vip_test"))
 	{
@@ -89,14 +98,14 @@ Connect_DB()
 	}
 	else
 	{
-		decl String:sError[256];
+		char sError[256];
 		sError[0] = '\0';
 		g_hDatabase = SQLite_UseDatabase("vip_test", sError, sizeof(sError));
 		DB_OnConnect(g_hDatabase, g_hDatabase, sError, 2);
 	}
 }
 
-public DB_OnConnect(Handle:owner, Handle:hndl, const String:sError[], any:data)
+stock void DB_OnConnect(Handle owner, Handle hndl, const char[] sError, any data)
 {
 	g_hDatabase = hndl;
 	
@@ -106,7 +115,7 @@ public DB_OnConnect(Handle:owner, Handle:hndl, const String:sError[], any:data)
 		return;
 	}
 
-	decl String:sDriver[16];
+	char sDriver[16];
 	switch (data)
 	{
 		case 1 :
@@ -130,7 +139,7 @@ public DB_OnConnect(Handle:owner, Handle:hndl, const String:sError[], any:data)
 	CreateTables();
 }
 
-public SQL_Callback_ErrorCheck(Handle:owner, Handle:hndl, const String:sError[], any:data)
+public void SQL_Callback_ErrorCheck(Handle owner, Handle hndl, const char[] sError, any data)
 {
 	if (sError[0])
 	{
@@ -138,7 +147,7 @@ public SQL_Callback_ErrorCheck(Handle:owner, Handle:hndl, const String:sError[],
 	}
 }
 
-CreateTables()
+stock void CreateTables()
 {
 	SQL_LockDatabase(g_hDatabase);
 	if (g_bDBMySQL)
@@ -158,7 +167,7 @@ CreateTables()
 	SQL_UnlockDatabase(g_hDatabase);
 }
 
-public Action:ClearTestVIP_CMD(iClient, args)
+public Action ClearTestVIP_CMD(int iClient, int args)
 {
 	if (iClient)
 	{
@@ -167,7 +176,7 @@ public Action:ClearTestVIP_CMD(iClient, args)
 	return Plugin_Handled;
 }
 
-public SQL_Callback_DropTable(Handle:hOwner, Handle:hQuery, const String:sError[], any:data)
+public void SQL_Callback_DropTable(Handle hOwner, Handle hQuery, const char[] sError, any data)
 {
 	if (hQuery == INVALID_HANDLE)
 	{
@@ -178,13 +187,13 @@ public SQL_Callback_DropTable(Handle:hOwner, Handle:hQuery, const String:sError[
 	CreateTables();
 }
 
-public Action:TestVIP_CMD(iClient, args)
+public Action TestVIP_CMD(int iClient, int args)
 {
 	if (iClient)
 	{
 		if(VIP_IsClientVIP(iClient) == false)
 		{
-			decl String:sQuery[256], String:sAuth[32];
+			char sQuery[256], sAuth[32];
 		//	GetClientAuthString(iClient, sAuth, sizeof(sAuth));
 			GetClientAuthId(iClient, AuthId_Steam2, sAuth, sizeof(sAuth));
 			FormatEx(sQuery, sizeof(sQuery), "SELECT `end` FROM `vip_test` WHERE `auth` = '%s' LIMIT 1;", sAuth);
@@ -198,9 +207,9 @@ public Action:TestVIP_CMD(iClient, args)
 	return Plugin_Handled;
 }
 
-public SQL_Callback_SelectClient(Handle:hOwner, Handle:hQuery, const String:sError[], any:UserID)
+public void SQL_Callback_SelectClient(Handle hOwner, Handle hQuery, const char[] sError, any UserID)
 {
-	new iClient = GetClientOfUserId(UserID);
+	int iClient = GetClientOfUserId(UserID);
 	if (iClient)
 	{
 		if (hQuery == INVALID_HANDLE)
@@ -213,15 +222,15 @@ public SQL_Callback_SelectClient(Handle:hOwner, Handle:hQuery, const String:sErr
 		{
 			if(g_iTestInterval > 0)
 			{
-				new iIntervalSeconds = SQL_FetchInt(hQuery, 0)+VIP_TimeToSeconds(g_iTestInterval),
-					iTime = GetTime();
+				int iIntervalSeconds = SQL_FetchInt(hQuery, 0)+VIP_TimeToSeconds(g_iTestInterval),
+				iTime = GetTime();
 				if(iTime > iIntervalSeconds)
 				{
 					GiveVIPToClient(iClient, true);
 				}
 				else
 				{
-					decl String:sTime[64];
+					char sTime[64];
 					if(VIP_GetTimeFromStamp(sTime, sizeof(sTime), iIntervalSeconds-iTime, iClient))
 					{
 						VIP_PrintToChatClient(iClient, "%t", "VIP_RENEWAL_IS_NOT_AVAILABLE_YET", sTime);
@@ -240,7 +249,7 @@ public SQL_Callback_SelectClient(Handle:hOwner, Handle:hQuery, const String:sErr
 	}
 }
 
-public SQL_Callback_InsertClient(Handle:hOwner, Handle:hQuery, const String:sError[], any:data)
+public void SQL_Callback_InsertClient(Handle hOwner, Handle hQuery, const char[] sError, any data)
 {
 	if (hQuery == INVALID_HANDLE)
 	{
@@ -249,20 +258,20 @@ public SQL_Callback_InsertClient(Handle:hOwner, Handle:hQuery, const String:sErr
 	}
 }
 
-public OnClientPostAdminCheck(iClient)
+public void OnClientPostAdminCheck(int iClient)
 {
 	if(IsFakeClient(iClient) == false)
 	{
-		decl String:sQuery[256], String:sAuth[32];
+		char sQuery[256], sAuth[32];
 		GetClientAuthId(iClient, AuthId_Steam2, sAuth, sizeof(sAuth));
 		FormatEx(sQuery, sizeof(sQuery), "SELECT `end` FROM `vip_test` WHERE `auth` = '%s' LIMIT 1;", sAuth);
 		SQL_TQuery(g_hDatabase, SQL_Callback_SelectClientAuthorized, sQuery, GetClientUserId(iClient));
 	}
 }
 
-public SQL_Callback_SelectClientAuthorized(Handle:hOwner, Handle:hQuery, const String:sError[], any:UserID)
+public void SQL_Callback_SelectClientAuthorized(Handle hOwner, Handle hQuery, const char[] sError, any UserID)
 {
-	new iClient = GetClientOfUserId(UserID);
+	int iClient = GetClientOfUserId(UserID);
 	if (iClient)
 	{
 		if (hQuery == INVALID_HANDLE)
@@ -273,7 +282,7 @@ public SQL_Callback_SelectClientAuthorized(Handle:hOwner, Handle:hQuery, const S
 		
 		if(SQL_FetchRow(hQuery))
 		{
-			decl iEnd, iTime;
+			int iEnd, iTime;
 			if((iEnd = SQL_FetchInt(hQuery, 0)) > (iTime = GetTime()) && !VIP_IsClientVIP(iClient))
 			{
 				VIP_GiveClientVIP(_, iClient, iEnd - iTime, g_sTestGroup, false);
@@ -282,9 +291,10 @@ public SQL_Callback_SelectClientAuthorized(Handle:hOwner, Handle:hQuery, const S
 	}
 }
 
-GiveVIPToClient(iClient, bool:bUpdate = false)
+bool GiveVIPToClient(int iClient, bool bUpdate = false)
 {
-	decl iSeconds, String:sQuery[256], String:sAuth[32];
+	int iSeconds;
+	char sQuery[256], sAuth[32];
 	iSeconds = VIP_TimeToSeconds(g_iTestTime);
 	VIP_GiveClientVIP(_, iClient, iSeconds, g_sTestGroup, false);
 	VIP_GetTimeFromStamp(sQuery, sizeof(sQuery), iSeconds, LANG_SERVER);
