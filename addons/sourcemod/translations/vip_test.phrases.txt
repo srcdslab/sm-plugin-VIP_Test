@@ -2,23 +2,34 @@
 {
 	"VIP_ALREADY"
 	{
-		"ru"	"Вы уже являетесь VIP игроком!"
-		"en"	"You are VIP already!"
-		"fi"	"Olet VIP Jo!
+		"ru"	"Вы уже являетесь VIP игроком!"
+		"en"	"You are VIP already!"
+		"fi"	"Olet VIP Jo!
+		"fr"	"Vous êtes déjà VIP !"
 	}
 
 	"VIP_RENEWAL_IS_NOT_AVAILABLE_YET"
 	{
 		"#format"	"{1:s}"
-		"ru"	"Повторно попробовать VIP функции можно будет через {1}!"
-		"en"	"Trying VIP features again will be available in {1}!"
-		"fi"	"Pystyt hankkimaan uudelleen vasta kun VIP tulee olemaan saatavilla {1} päästä!"
+		"ru"	"Повторно попробовать VIP функции можно будет через {1}!"
+		"en"	"Trying VIP features again will be available in {1}!"
+		"fi"	"Pystyt hankkimaan uudelleen vasta kun VIP tulee olemaan saatavilla {1} päästä!"
+		"fr"	"Réessayer dans un instant. Les fonctionnalités VIP sera disponible dans {1}!"
 	}
 
 	"VIP_RENEWAL_IS_DISABLED"
 	{
-		"ru"	"Повторное получение VIP-статуса запрещено!"
-		"en"	"VIP renewal is disabled!"
-		"fi"	"VIP uusiminen ei ole käytössä!"
+		"ru"	"Повторное получение VIP-статуса запрещено!"
+		"en"	"VIP renewal is disabled!"
+		"fi"	"VIP uusiminen ei ole käytössä!"
+		"fr"	"Le renouvellement VIP est désactivé !"
+	}
+
+	"VIP_AUTH_FAILED"
+	{
+		"ru"	"Не удалось подтвердить ваш SteamID. Попробуй позже."
+		"en"	"Unable to verify your SteamID. Try later."
+		"fi"	"SteamID:n vahvistaminen epäonnistui. Yritä myöhemmin."
+		"fr"	"Impossible de vérifier votre SteamID. Essayer plus tard."
 	}
 }
