@@ -28,6 +28,9 @@
 				Добавлена поддержка MySQL.
 				Изменено сообщение в лог.
 		1.0.4 - Update syntax to SM 1.11
+		1.0.5 - Check if SteamID is valid to give VIP Test.
+				Translations from CRLF to LF.
+				French translate
 */
 #pragma semicolon 1
 #pragma newdecls required
@@ -40,7 +43,7 @@ public Plugin myinfo =
 	name = "[VIP] Test",
 	author = "Loneypro",
 	description = "Players can test vip features for a set of time",
-	version = "1.0.4",
+	version = "1.0.5",
 	url = ""
 };
 
@@ -195,9 +198,17 @@ public Action TestVIP_CMD(int iClient, int args)
 		{
 			char sQuery[256], sAuth[32];
 		//	GetClientAuthString(iClient, sAuth, sizeof(sAuth));
-			GetClientAuthId(iClient, AuthId_Steam2, sAuth, sizeof(sAuth));
-			FormatEx(sQuery, sizeof(sQuery), "SELECT `end` FROM `vip_test` WHERE `auth` = '%s' LIMIT 1;", sAuth);
-			SQL_TQuery(g_hDatabase, SQL_Callback_SelectClient, sQuery, GetClientUserId(iClient));
+		//	GetClientAuthId(iClient, AuthId_Steam2, sAuth, sizeof(sAuth));
+			if (!GetClientAuthId(iClient, AuthId_Steam2, sAuth, sizeof(sAuth), true))
+			{
+				VIP_PrintToChatClient(iClient, "%t", "VIP_AUTH_FAILED");
+				return Plugin_Handled;
+			}
+			else
+			{
+				FormatEx(sQuery, sizeof(sQuery), "SELECT `end` FROM `vip_test` WHERE `auth` = '%s' LIMIT 1;", sAuth);
+				SQL_TQuery(g_hDatabase, SQL_Callback_SelectClient, sQuery, GetClientUserId(iClient));
+			}
 		}
 		else
 		{
