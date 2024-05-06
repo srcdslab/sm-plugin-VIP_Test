@@ -31,6 +31,8 @@
 		1.0.5 - Check if SteamID is valid to give VIP Test.
 				Translations from CRLF to LF.
 				French translate
+		1.0.6 - Prevent attempt to give VIP Test to a player who already has VIP status.
+				Fix FI translation.
 */
 #pragma semicolon 1
 #pragma newdecls required
@@ -43,7 +45,7 @@ public Plugin myinfo =
 	name = "[VIP] Test",
 	author = "Loneypro",
 	description = "Players can test vip features for a set of time",
-	version = "1.0.5",
+	version = "1.0.6",
 	url = ""
 };
 
@@ -194,25 +196,24 @@ public Action TestVIP_CMD(int iClient, int args)
 {
 	if (iClient)
 	{
-		if(VIP_IsClientVIP(iClient) == false)
+		if(VIP_IsClientVIP(iClient))
 		{
-			char sQuery[256], sAuth[32];
+			VIP_PrintToChatClient(iClient, "%t", "VIP_ALREADY");
+			return Plugin_Handled;
+		}
+
+		char sQuery[256], sAuth[32];
 		//	GetClientAuthString(iClient, sAuth, sizeof(sAuth));
 		//	GetClientAuthId(iClient, AuthId_Steam2, sAuth, sizeof(sAuth));
-			if (!GetClientAuthId(iClient, AuthId_Steam2, sAuth, sizeof(sAuth), true))
-			{
-				VIP_PrintToChatClient(iClient, "%t", "VIP_AUTH_FAILED");
-				return Plugin_Handled;
-			}
-			else
-			{
-				FormatEx(sQuery, sizeof(sQuery), "SELECT `end` FROM `vip_test` WHERE `auth` = '%s' LIMIT 1;", sAuth);
-				SQL_TQuery(g_hDatabase, SQL_Callback_SelectClient, sQuery, GetClientUserId(iClient));
-			}
+		if (!GetClientAuthId(iClient, AuthId_Steam2, sAuth, sizeof(sAuth), true))
+		{
+			VIP_PrintToChatClient(iClient, "%t", "VIP_AUTH_FAILED");
+			return Plugin_Handled;
 		}
 		else
 		{
-			VIP_PrintToChatClient(iClient, "%t", "VIP_ALREADY");
+			FormatEx(sQuery, sizeof(sQuery), "SELECT `end` FROM `vip_test` WHERE `auth` = '%s' LIMIT 1;", sAuth);
+			SQL_TQuery(g_hDatabase, SQL_Callback_SelectClient, sQuery, GetClientUserId(iClient));
 		}
 	}
 	return Plugin_Handled;
@@ -302,8 +303,14 @@ public void SQL_Callback_SelectClientAuthorized(Handle hOwner, Handle hQuery, co
 	}
 }
 
-bool GiveVIPToClient(int iClient, bool bUpdate = false)
+stock void GiveVIPToClient(int iClient, bool bUpdate = false)
 {
+	if (VIP_IsClientVIP(iClient))
+	{
+		VIP_PrintToChatClient(iClient, "%t", "VIP_ALREADY");
+		return;
+	}
+
 	int iSeconds;
 	char sQuery[256], sAuth[32];
 	iSeconds = VIP_TimeToSeconds(g_iTestTime);
