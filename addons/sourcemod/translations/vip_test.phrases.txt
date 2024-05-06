@@ -4,7 +4,7 @@
 	{
 		"ru"	"Вы уже являетесь VIP игроком!"
 		"en"	"You are VIP already!"
-		"fi"	"Olet VIP Jo!
+		"fi"	"Olet VIP Jo!"
 		"fr"	"Vous êtes déjà VIP !"
 	}
 
