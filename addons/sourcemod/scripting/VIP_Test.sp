@@ -33,12 +33,16 @@
 				French translate
 		1.0.6 - Prevent attempt to give VIP Test to a player who already has VIP status.
 				Fix FI translation.
+		1.0.7 - Upgrade to utf8mb4
 */
 #pragma semicolon 1
 #pragma newdecls required
 
 #include <sourcemod>
 #include <vip_core>
+
+#define DB_CHARSET "utf8mb4"
+#define DB_COLLATION "utf8mb4_unicode_ci"
 
 public Plugin myinfo =
 {
@@ -137,8 +141,12 @@ stock void DB_OnConnect(Handle owner, Handle hndl, const char[] sError, any data
 
 	if (g_bDBMySQL)
 	{
-		SQL_TQuery(g_hDatabase, SQL_Callback_ErrorCheck, "SET NAMES 'utf8'");
-		SQL_TQuery(g_hDatabase, SQL_Callback_ErrorCheck, "SET CHARSET 'utf8'");
+		char sQuery[256];
+		Format(sQuery, sizeof(sQuery), "SET NAMES \"%s\"", DB_CHARSET);
+		SQL_TQuery(g_hDatabase, SQL_Callback_ErrorCheck, sQuery);
+
+		Format(sQuery, sizeof(sQuery), "SET CHARSET \"%s\"", DB_CHARSET);
+		SQL_TQuery(g_hDatabase, SQL_Callback_ErrorCheck, sQuery);
 	}
 	
 	CreateTables();
@@ -157,11 +165,13 @@ stock void CreateTables()
 	SQL_LockDatabase(g_hDatabase);
 	if (g_bDBMySQL)
 	{
-		SQL_TQuery(g_hDatabase, SQL_Callback_ErrorCheck,	"CREATE TABLE IF NOT EXISTS `vip_test` (\
-																		`auth` VARCHAR(24) NOT NULL, \
-																		`end` INT(10) UNSIGNED NOT NULL, \
-																		PRIMARY KEY(`auth`)) \
-																		ENGINE=InnoDB DEFAULT CHARSET=utf8;");
+		char sQuery[512];
+		Format(sQuery, sizeof(sQuery), "CREATE TABLE IF NOT EXISTS `vip_test` (\
+										`auth` VARCHAR(24) NOT NULL, \
+										`end` INT(10) UNSIGNED NOT NULL, \
+										PRIMARY KEY(`auth`)) \
+										DEFAULT CHARSET=%s COLLATE=%s;", DB_CHARSET, DB_COLLATION);
+		SQL_TQuery(g_hDatabase, SQL_Callback_ErrorCheck, sQuery);
 	}
 	else
 	{
