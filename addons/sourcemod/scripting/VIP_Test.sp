@@ -34,6 +34,7 @@
 		1.0.6 - Prevent attempt to give VIP Test to a player who already has VIP status.
 				Fix FI translation.
 		1.0.7 - Upgrade to utf8mb4
+		1.0.8 - No need to lock/unlock database - All queries are asynchronous.
 */
 #pragma semicolon 1
 #pragma newdecls required
@@ -49,7 +50,7 @@ public Plugin myinfo =
 	name = "[VIP] Test",
 	author = "Loneypro",
 	description = "Players can test vip features for a set of time",
-	version = "1.0.7",
+	version = "1.0.8",
 	url = ""
 };
 
@@ -162,7 +163,6 @@ public void SQL_Callback_ErrorCheck(Handle owner, Handle hndl, const char[] sErr
 
 stock void CreateTables()
 {
-	SQL_LockDatabase(g_hDatabase);
 	if (g_bDBMySQL)
 	{
 		char sQuery[512];
@@ -179,7 +179,6 @@ stock void CreateTables()
 																		`auth` VARCHAR(24) NOT NULL PRIMARY KEY, \
 																		`end` INTEGER UNSIGNED NOT NULL);");
 	}
-	SQL_UnlockDatabase(g_hDatabase);
 }
 
 public Action ClearTestVIP_CMD(int iClient, int args)
