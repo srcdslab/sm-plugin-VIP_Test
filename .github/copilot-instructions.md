@@ -14,30 +14,22 @@ This repository contains a SourcePawn plugin for SourceMod that implements a VIP
 ## Technical Environment
 
 - **Language**: SourcePawn (.sp files)
-- **Platform**: SourceMod 1.11+ (currently using 1.11.0-git6917)
-- **Build System**: SourceKnight (configured in `sourceknight.yaml`)
+- **Platform**: SourceMod 1.12.x
+- **Build System**: Native GitHub Actions (configured in `.github/workflows/ci.yml`)
 - **Database**: MySQL (preferred) or SQLite fallback
 - **Dependencies**: VIP Core plugin from srcdslab/sm-plugin-VIP-Core
 
 ## Build System & Development Workflow
 
-### SourceKnight Configuration
-The project uses SourceKnight for building. Key configuration in `sourceknight.yaml`:
-- Dependencies are automatically downloaded (SourceMod + VIP Core)
-- Output goes to `/addons/sourcemod/plugins`
-- Target: `VIP_Test` (produces VIP_Test.smx)
-
-### CI/CD Pipeline
-- Automated builds on push/PR via GitHub Actions
-- Uses `maxime1907/action-sourceknight@v1`
+### GitHub Actions CI
+The project builds via a native GitHub Actions workflow (`.github/workflows/ci.yml`):
+- Sets up the SourcePawn compiler with `rumblefrog/setup-sp@v1.3.1` (SourceMod 1.12.x)
+- Clones VIP Core includes and compiles `VIP_Test.sp` with `spcomp`
 - Creates packages with plugins and translations
-- Automatic releases with version tagging
+- Automatic releases (tagged `latest`) on pushes to `master`/`main`
 
 ### Building Locally
 ```bash
-# If SourceKnight is installed
-sourceknight build
-
 # Manual compilation (requires SourceMod compiler and includes)
 spcomp -i"includes" VIP_Test.sp
 ```
@@ -302,7 +294,7 @@ if (!GetClientAuthId(iClient, AuthId_Steam2, sAuth, sizeof(sAuth), true)) {
 ## Dependencies & External Resources
 
 - **VIP Core Plugin**: Required dependency from srcdslab/sm-plugin-VIP-Core
-- **SourceMod Include Files**: Automatically handled by SourceKnight
+- **SourceMod Include Files**: Automatically fetched by the GitHub Actions CI workflow
 - **Database Configuration**: Uses "vip_test" section in databases.cfg or SQLite fallback
 - **Translation Files**: Must be present in translations directory
 
