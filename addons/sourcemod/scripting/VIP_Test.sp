@@ -36,6 +36,7 @@
 		1.0.7 - Upgrade to utf8mb4
 		1.0.8 - No need to lock/unlock database - All queries are asynchronous.
 		1.0.9 - Simplify connect db logic - Use async connect.
+		1.0.10 - SQL auto reconnect: retry on connect failure and on lost connection.
 */
 #pragma semicolon 1
 #pragma newdecls required
@@ -51,12 +52,15 @@ public Plugin myinfo =
 	name = "[VIP] Test",
 	author = "Loneypro",
 	description = "Players can test vip features for a set of time",
-	version = "1.0.9",
+	version = "1.0.10",
 	url = ""
 };
 
 Handle g_hDatabase;
+Handle g_hReconnectTimer;
 bool g_bDBMySQL;
+bool g_bConnecting;
+float g_fReconnectInterval;
 int g_iTestTime;
 int g_iTestInterval;
 char g_sTestGroup[64];
@@ -74,6 +78,10 @@ public void OnPluginStart()
 	ConVar hCvar2 = CreateConVar("sm_vip_test_interval", "3600", "Через сколько времени можно повторно брать тестовый VIP-статус (значение зависит от sm_vip_time_mode) (0 - Запретить брать повторно) / How often player can request test VIP status (value depends on sm_vip_time_mode) (0 - deny new requests)");
 	hCvar2.AddChangeHook(OnTestIntervalChange);
 	g_iTestInterval = hCvar2.IntValue;
+
+	ConVar hCvar3 = CreateConVar("sm_vip_test_reconnect_interval", "30.0", "Через сколько секунд повторять попытку подключения к базе данных / Delay in seconds between database reconnection attempts", 0, true, 5.0);
+	hCvar3.AddChangeHook(OnReconnectIntervalChange);
+	g_fReconnectInterval = hCvar3.FloatValue;
 
 	AutoExecConfig(true, "vip_test", "vip");
 	
@@ -96,6 +104,10 @@ public void OnTestIntervalChange(ConVar hCvar, const char[] oldVal, const char[]
 {
 	g_iTestInterval = GetConVarInt(hCvar);
 }
+public void OnReconnectIntervalChange(ConVar hCvar, const char[] oldVal, const char[] newVal)
+{
+	g_fReconnectInterval = hCvar.FloatValue;
+}
 public void OnTestGroupChange(ConVar hCvar, const char[] oldVal, const char[] newVal)
 {
 	strcopy(g_sTestGroup, sizeof(g_sTestGroup), newVal);
@@ -103,21 +115,69 @@ public void OnTestGroupChange(ConVar hCvar, const char[] oldVal, const char[] ne
 
 stock void Connect_DB()
 {
+	if (g_bConnecting || g_hDatabase != null)
+	{
+		return;
+	}
+
+	g_bConnecting = true;
+
 	// Database.Connect() implicitly falls back to a local SQLite database
 	// named "vip_test" when no matching entry exists in databases.cfg, so
 	// this single async call covers both the MySQL and SQLite cases.
 	Database.Connect(DB_OnConnect, "vip_test");
 }
 
+stock void ScheduleReconnect()
+{
+	if (g_hReconnectTimer == null)
+	{
+		g_hReconnectTimer = CreateTimer(g_fReconnectInterval, Timer_Reconnect);
+	}
+}
+
+public Action Timer_Reconnect(Handle hTimer)
+{
+	g_hReconnectTimer = null;
+	Connect_DB();
+	return Plugin_Stop;
+}
+
+// Returns true if the error means the connection to the database was lost.
+stock bool IsConnectionLostError(const char[] sError)
+{
+	return (StrContains(sError, "gone away", false) != -1
+		|| StrContains(sError, "Lost connection", false) != -1
+		|| StrContains(sError, "Can't connect", false) != -1
+		|| StrContains(sError, "Broken pipe", false) != -1);
+}
+
+// Logs a query error and triggers a reconnect if the connection was lost.
+stock void HandleQueryError(const char[] sCallback, const char[] sError)
+{
+	LogError("%s: %s", sCallback, sError);
+
+	if (g_hDatabase != null && IsConnectionLostError(sError))
+	{
+		LogError("Lost connection to the database, reconnecting...");
+		delete g_hDatabase;
+		Connect_DB();
+	}
+}
+
 public void DB_OnConnect(Database db, const char[] sError, any data)
 {
-	g_hDatabase = db;
+	g_bConnecting = false;
 
-	if (g_hDatabase == null || sError[0])
+	if (db == null || sError[0])
 	{
-		SetFailState("DB Connect %s", sError);
+		delete db;
+		LogError("DB Connect failed: %s. Retrying in %.0f seconds.", sError, g_fReconnectInterval);
+		ScheduleReconnect();
 		return;
 	}
+
+	g_hDatabase = db;
 
 	char sDriver[16];
 	db.Driver.GetIdentifier(sDriver, sizeof(sDriver));
@@ -135,13 +195,22 @@ public void DB_OnConnect(Database db, const char[] sError, any data)
 	}
 	
 	CreateTables();
+
+	// Load players who joined while the database was unavailable
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (IsClientInGame(i) && IsClientAuthorized(i))
+		{
+			OnClientPostAdminCheck(i);
+		}
+	}
 }
 
 public void SQL_Callback_ErrorCheck(Handle owner, Handle hndl, const char[] sError, any data)
 {
 	if (sError[0])
 	{
-		LogError("SQL_Callback_ErrorCheck: %s", sError);
+		HandleQueryError("SQL_Callback_ErrorCheck", sError);
 	}
 }
 
@@ -169,6 +238,12 @@ public Action ClearTestVIP_CMD(int iClient, int args)
 {
 	if (iClient)
 	{
+		if (g_hDatabase == null)
+		{
+			VIP_PrintToChatClient(iClient, "%t", "VIP_DB_UNAVAILABLE");
+			return Plugin_Handled;
+		}
+
 		SQL_TQuery(g_hDatabase, SQL_Callback_DropTable, "DROP TABLE `vip_test`;");
 	}
 	return Plugin_Handled;
@@ -178,7 +253,7 @@ public void SQL_Callback_DropTable(Handle hOwner, Handle hQuery, const char[] sE
 {
 	if (hQuery == INVALID_HANDLE)
 	{
-		LogError("SQL_Callback_DropTable: %s", sError);
+		HandleQueryError("SQL_Callback_DropTable", sError);
 		return;
 	}
 
@@ -192,6 +267,12 @@ public Action TestVIP_CMD(int iClient, int args)
 		if(VIP_IsClientVIP(iClient))
 		{
 			VIP_PrintToChatClient(iClient, "%t", "VIP_ALREADY");
+			return Plugin_Handled;
+		}
+
+		if (g_hDatabase == null)
+		{
+			VIP_PrintToChatClient(iClient, "%t", "VIP_DB_UNAVAILABLE");
 			return Plugin_Handled;
 		}
 
@@ -215,14 +296,18 @@ public Action TestVIP_CMD(int iClient, int args)
 public void SQL_Callback_SelectClient(Handle hOwner, Handle hQuery, const char[] sError, any UserID)
 {
 	int iClient = GetClientOfUserId(UserID);
+	if (hQuery == INVALID_HANDLE)
+	{
+		HandleQueryError("SQL_Callback_SelectClient", sError);
+		if (iClient)
+		{
+			VIP_PrintToChatClient(iClient, "%t", "VIP_DB_UNAVAILABLE");
+		}
+		return;
+	}
+
 	if (iClient)
 	{
-		if (hQuery == INVALID_HANDLE)
-		{
-			LogError("SQL_Callback_SelectClient: %s", sError);
-			return;
-		}
-		
 		if(SQL_FetchRow(hQuery))
 		{
 			if(g_iTestInterval > 0)
@@ -258,13 +343,19 @@ public void SQL_Callback_InsertClient(Handle hOwner, Handle hQuery, const char[]
 {
 	if (hQuery == INVALID_HANDLE)
 	{
-		LogError("SQL_Callback_InsertClient: %s", sError);
+		HandleQueryError("SQL_Callback_InsertClient", sError);
 		return;
 	}
 }
 
 public void OnClientPostAdminCheck(int iClient)
 {
+	if (g_hDatabase == null)
+	{
+		// Client will be loaded once the database connection is back
+		return;
+	}
+
 	if(IsFakeClient(iClient) == false)
 	{
 		char sQuery[256], sAuth[32];
@@ -277,14 +368,14 @@ public void OnClientPostAdminCheck(int iClient)
 public void SQL_Callback_SelectClientAuthorized(Handle hOwner, Handle hQuery, const char[] sError, any UserID)
 {
 	int iClient = GetClientOfUserId(UserID);
+	if (hQuery == INVALID_HANDLE)
+	{
+		HandleQueryError("SQL_Callback_SelectClientAuthorized", sError);
+		return;
+	}
+
 	if (iClient)
 	{
-		if (hQuery == INVALID_HANDLE)
-		{
-			LogError("SQL_Callback_SelectClientAuthorized: %s", sError);
-			return;
-		}
-		
 		if(SQL_FetchRow(hQuery))
 		{
 			int iEnd, iTime;
@@ -301,6 +392,13 @@ stock void GiveVIPToClient(int iClient, bool bUpdate = false)
 	if (VIP_IsClientVIP(iClient))
 	{
 		VIP_PrintToChatClient(iClient, "%t", "VIP_ALREADY");
+		return;
+	}
+
+	// Don't give VIP status if we can't save it
+	if (g_hDatabase == null)
+	{
+		VIP_PrintToChatClient(iClient, "%t", "VIP_DB_UNAVAILABLE");
 		return;
 	}
 
