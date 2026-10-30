@@ -36,7 +36,8 @@
 		1.0.7 - Upgrade to utf8mb4
 		1.0.8 - No need to lock/unlock database - All queries are asynchronous.
 		1.0.9 - Simplify connect db logic - Use async connect.
-		1.0.10 - SQL auto reconnect: retry on connect failure and on lost connection.
+		1.0.10 - Use SourceMod 1.12 methodmaps.
+		1.0.11 - SQL auto reconnect: retry on connect failure and on lost connection.
 */
 #pragma semicolon 1
 #pragma newdecls required
@@ -52,11 +53,11 @@ public Plugin myinfo =
 	name = "[VIP] Test",
 	author = "Loneypro",
 	description = "Players can test vip features for a set of time",
-	version = "1.0.10",
+	version = "1.0.11",
 	url = ""
 };
 
-Handle g_hDatabase;
+Database g_hDatabase;
 Handle g_hReconnectTimer;
 bool g_bDBMySQL;
 bool g_bConnecting;
@@ -69,7 +70,7 @@ public void OnPluginStart()
 {
 	ConVar hCvar = CreateConVar("sm_vip_test_group", "Test VIP", "Группа для тестового VIP-статуса / Test VIP group");
 	hCvar.AddChangeHook(OnTestGroupChange);
-	GetConVarString(hCvar, g_sTestGroup, sizeof(g_sTestGroup));
+	hCvar.GetString(g_sTestGroup, sizeof(g_sTestGroup));
 	
 	ConVar hCvar1 = CreateConVar("sm_vip_test_time", "120", "На сколько времени выдавать тестовый VIP-статус (значение зависит от sm_vip_time_mode) / VIP-Test duration (value depends on sm_vip_time_mode)", 0, true, 0.0);
 	hCvar1.AddChangeHook(OnTestTimeChange);
@@ -98,11 +99,11 @@ public void OnPluginStart()
 
 public void OnTestTimeChange(ConVar hCvar, const char[] oldVal, const char[] newVal)
 {
-	g_iTestTime = GetConVarInt(hCvar);
+	g_iTestTime = hCvar.IntValue;
 }
 public void OnTestIntervalChange(ConVar hCvar, const char[] oldVal, const char[] newVal)
 {
-	g_iTestInterval = GetConVarInt(hCvar);
+	g_iTestInterval = hCvar.IntValue;
 }
 public void OnReconnectIntervalChange(ConVar hCvar, const char[] oldVal, const char[] newVal)
 {
@@ -188,10 +189,10 @@ public void DB_OnConnect(Database db, const char[] sError, any data)
 	{
 		char sQuery[256];
 		Format(sQuery, sizeof(sQuery), "SET NAMES \"%s\"", DB_CHARSET);
-		SQL_TQuery(g_hDatabase, SQL_Callback_ErrorCheck, sQuery);
+		g_hDatabase.Query(SQL_Callback_ErrorCheck, sQuery);
 
 		Format(sQuery, sizeof(sQuery), "SET CHARSET \"%s\"", DB_CHARSET);
-		SQL_TQuery(g_hDatabase, SQL_Callback_ErrorCheck, sQuery);
+		g_hDatabase.Query(SQL_Callback_ErrorCheck, sQuery);
 	}
 	
 	CreateTables();
@@ -206,7 +207,7 @@ public void DB_OnConnect(Database db, const char[] sError, any data)
 	}
 }
 
-public void SQL_Callback_ErrorCheck(Handle owner, Handle hndl, const char[] sError, any data)
+public void SQL_Callback_ErrorCheck(Database owner, DBResultSet hndl, const char[] sError, any data)
 {
 	if (sError[0])
 	{
@@ -224,11 +225,11 @@ stock void CreateTables()
 										`end` INT(10) UNSIGNED NOT NULL, \
 										PRIMARY KEY(`auth`)) \
 										DEFAULT CHARSET=%s COLLATE=%s;", DB_CHARSET, DB_COLLATION);
-		SQL_TQuery(g_hDatabase, SQL_Callback_ErrorCheck, sQuery);
+		g_hDatabase.Query(SQL_Callback_ErrorCheck, sQuery);
 	}
 	else
 	{
-		SQL_TQuery(g_hDatabase, SQL_Callback_ErrorCheck,	"CREATE TABLE IF NOT EXISTS `vip_test` (\
+		g_hDatabase.Query(SQL_Callback_ErrorCheck, "CREATE TABLE IF NOT EXISTS `vip_test` (\
 																		`auth` VARCHAR(24) NOT NULL PRIMARY KEY, \
 																		`end` INTEGER UNSIGNED NOT NULL);");
 	}
@@ -244,14 +245,14 @@ public Action ClearTestVIP_CMD(int iClient, int args)
 			return Plugin_Handled;
 		}
 
-		SQL_TQuery(g_hDatabase, SQL_Callback_DropTable, "DROP TABLE `vip_test`;");
+		g_hDatabase.Query(SQL_Callback_DropTable, "DROP TABLE `vip_test`;");
 	}
 	return Plugin_Handled;
 }
 
-public void SQL_Callback_DropTable(Handle hOwner, Handle hQuery, const char[] sError, any data)
+public void SQL_Callback_DropTable(Database hOwner, DBResultSet hQuery, const char[] sError, any data)
 {
-	if (hQuery == INVALID_HANDLE)
+	if (hQuery == null)
 	{
 		HandleQueryError("SQL_Callback_DropTable", sError);
 		return;
@@ -287,16 +288,16 @@ public Action TestVIP_CMD(int iClient, int args)
 		else
 		{
 			FormatEx(sQuery, sizeof(sQuery), "SELECT `end` FROM `vip_test` WHERE `auth` = '%s' LIMIT 1;", sAuth);
-			SQL_TQuery(g_hDatabase, SQL_Callback_SelectClient, sQuery, GetClientUserId(iClient));
+			g_hDatabase.Query(SQL_Callback_SelectClient, sQuery, GetClientUserId(iClient));
 		}
 	}
 	return Plugin_Handled;
 }
 
-public void SQL_Callback_SelectClient(Handle hOwner, Handle hQuery, const char[] sError, any UserID)
+public void SQL_Callback_SelectClient(Database hOwner, DBResultSet hQuery, const char[] sError, any UserID)
 {
 	int iClient = GetClientOfUserId(UserID);
-	if (hQuery == INVALID_HANDLE)
+	if (hQuery == null)
 	{
 		HandleQueryError("SQL_Callback_SelectClient", sError);
 		if (iClient)
@@ -308,11 +309,11 @@ public void SQL_Callback_SelectClient(Handle hOwner, Handle hQuery, const char[]
 
 	if (iClient)
 	{
-		if(SQL_FetchRow(hQuery))
+		if(hQuery.FetchRow())
 		{
 			if(g_iTestInterval > 0)
 			{
-				int iIntervalSeconds = SQL_FetchInt(hQuery, 0)+VIP_TimeToSeconds(g_iTestInterval),
+				int iIntervalSeconds = hQuery.FetchInt(0)+VIP_TimeToSeconds(g_iTestInterval),
 				iTime = GetTime();
 				if(iTime > iIntervalSeconds)
 				{
@@ -339,9 +340,9 @@ public void SQL_Callback_SelectClient(Handle hOwner, Handle hQuery, const char[]
 	}
 }
 
-public void SQL_Callback_InsertClient(Handle hOwner, Handle hQuery, const char[] sError, any data)
+public void SQL_Callback_InsertClient(Database hOwner, DBResultSet hQuery, const char[] sError, any data)
 {
-	if (hQuery == INVALID_HANDLE)
+	if (hQuery == null)
 	{
 		HandleQueryError("SQL_Callback_InsertClient", sError);
 		return;
@@ -361,14 +362,14 @@ public void OnClientPostAdminCheck(int iClient)
 		char sQuery[256], sAuth[32];
 		GetClientAuthId(iClient, AuthId_Steam2, sAuth, sizeof(sAuth));
 		FormatEx(sQuery, sizeof(sQuery), "SELECT `end` FROM `vip_test` WHERE `auth` = '%s' LIMIT 1;", sAuth);
-		SQL_TQuery(g_hDatabase, SQL_Callback_SelectClientAuthorized, sQuery, GetClientUserId(iClient));
+		g_hDatabase.Query(SQL_Callback_SelectClientAuthorized, sQuery, GetClientUserId(iClient));
 	}
 }
 
-public void SQL_Callback_SelectClientAuthorized(Handle hOwner, Handle hQuery, const char[] sError, any UserID)
+public void SQL_Callback_SelectClientAuthorized(Database hOwner, DBResultSet hQuery, const char[] sError, any UserID)
 {
 	int iClient = GetClientOfUserId(UserID);
-	if (hQuery == INVALID_HANDLE)
+	if (hQuery == null)
 	{
 		HandleQueryError("SQL_Callback_SelectClientAuthorized", sError);
 		return;
@@ -376,10 +377,10 @@ public void SQL_Callback_SelectClientAuthorized(Handle hOwner, Handle hQuery, co
 
 	if (iClient)
 	{
-		if(SQL_FetchRow(hQuery))
+		if(hQuery.FetchRow())
 		{
 			int iEnd, iTime;
-			if((iEnd = SQL_FetchInt(hQuery, 0)) > (iTime = GetTime()) && !VIP_IsClientVIP(iClient))
+			if((iEnd = hQuery.FetchInt(0)) > (iTime = GetTime()) && !VIP_IsClientVIP(iClient))
 			{
 				VIP_GiveClientVIP(_, iClient, iEnd - iTime, g_sTestGroup, false);
 			}
@@ -421,5 +422,5 @@ stock void GiveVIPToClient(int iClient, bool bUpdate = false)
 		FormatEx(sQuery, sizeof(sQuery), "INSERT INTO `vip_test` (`auth`, `end`) VALUES ('%s', '%i');", sAuth, GetTime()+iSeconds);
 	}
 
-	SQL_TQuery(g_hDatabase, SQL_Callback_InsertClient, sQuery);
+	g_hDatabase.Query(SQL_Callback_InsertClient, sQuery);
 }
