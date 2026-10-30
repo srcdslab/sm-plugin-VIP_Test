@@ -32,4 +32,12 @@
 		"fi"	"SteamID:n vahvistaminen epäonnistui. Yritä myöhemmin."
 		"fr"	"Impossible de vérifier votre SteamID. Essayer plus tard."
 	}
+
+	"VIP_DB_UNAVAILABLE"
+	{
+		"ru"	"База данных недоступна. Попробуйте позже."
+		"en"	"The database is unavailable. Try later."
+		"fi"	"Tietokanta ei ole käytettävissä. Yritä myöhemmin."
+		"fr"	"La base de données est indisponible. Réessayez plus tard."
+	}
 }
