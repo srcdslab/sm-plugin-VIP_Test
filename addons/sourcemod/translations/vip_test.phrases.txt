@@ -3,18 +3,26 @@
 	"VIP_ALREADY"
 	{
 		"ru"	"Вы уже являетесь VIP игроком!"
-		"en"	"You are VIP already!"
-		"fi"	"Olet VIP Jo!"
+		"en"	"You are already VIP!"
+		"fi"	"Olet jo VIP!"
 		"fr"	"Vous êtes déjà VIP !"
+		"es"	"¡Ya eres VIP!"
+		"de"	"Du bist bereits VIP!"
+		"pt"	"Você já é VIP!"
+		"chi"	"你已经是VIP了！"
 	}
 
 	"VIP_RENEWAL_IS_NOT_AVAILABLE_YET"
 	{
 		"#format"	"{1:s}"
 		"ru"	"Повторно попробовать VIP функции можно будет через {1}!"
-		"en"	"Trying VIP features again will be available in {1}!"
-		"fi"	"Pystyt hankkimaan uudelleen vasta kun VIP tulee olemaan saatavilla {1} päästä!"
-		"fr"	"Réessayer dans un instant. Les fonctionnalités VIP sera disponible dans {1}!"
+		"en"	"You can try VIP features again in {1}!"
+		"fi"	"Voit kokeilla VIP-ominaisuuksia uudelleen {1} päästä!"
+		"fr"	"Vous pourrez réessayer les fonctionnalités VIP dans {1} !"
+		"es"	"¡Podrás volver a probar las funciones VIP en {1}!"
+		"de"	"Du kannst die VIP-Funktionen in {1} erneut testen!"
+		"pt"	"Você poderá testar as funções VIP novamente em {1}!"
+		"chi"	"{1}后才能再次试用VIP功能！"
 	}
 
 	"VIP_RENEWAL_IS_DISABLED"
@@ -23,14 +31,22 @@
 		"en"	"VIP renewal is disabled!"
 		"fi"	"VIP uusiminen ei ole käytössä!"
 		"fr"	"Le renouvellement VIP est désactivé !"
+		"es"	"¡La renovación VIP está desactivada!"
+		"de"	"VIP-Verlängerung ist deaktiviert!"
+		"pt"	"A renovação VIP está desativada!"
+		"chi"	"VIP续期已禁用！"
 	}
 
 	"VIP_AUTH_FAILED"
 	{
-		"ru"	"Не удалось подтвердить ваш SteamID. Попробуй позже."
+		"ru"	"Не удалось подтвердить ваш SteamID. Попробуйте позже."
 		"en"	"Unable to verify your SteamID. Try later."
 		"fi"	"SteamID:n vahvistaminen epäonnistui. Yritä myöhemmin."
-		"fr"	"Impossible de vérifier votre SteamID. Essayer plus tard."
+		"fr"	"Impossible de vérifier votre SteamID. Réessayez plus tard."
+		"es"	"No se pudo verificar tu SteamID. Inténtalo más tarde."
+		"de"	"Deine SteamID konnte nicht überprüft werden. Versuche es später erneut."
+		"pt"	"Não foi possível verificar seu SteamID. Tente mais tarde."
+		"chi"	"无法验证你的SteamID。请稍后再试。"
 	}
 
 	"VIP_DB_UNAVAILABLE"
@@ -39,5 +55,9 @@
 		"en"	"The database is unavailable. Try later."
 		"fi"	"Tietokanta ei ole käytettävissä. Yritä myöhemmin."
 		"fr"	"La base de données est indisponible. Réessayez plus tard."
+		"es"	"La base de datos no está disponible. Inténtalo más tarde."
+		"de"	"Die Datenbank ist nicht verfügbar. Versuche es später erneut."
+		"pt"	"O banco de dados está indisponível. Tente mais tarde."
+		"chi"	"数据库不可用。请稍后再试。"
 	}
 }
