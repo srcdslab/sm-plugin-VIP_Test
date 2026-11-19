@@ -10,6 +10,12 @@
 		"de"	"Du bist bereits VIP!"
 		"pt"	"Você já é VIP!"
 		"chi"	"你已经是VIP了！"
+		"pl"	"Jesteś już VIP-em!"
+		"tr"	"Zaten VIP'sin!"
+		"it"	"Sei già VIP!"
+		"ua"	"Ви вже є VIP гравцем!"
+		"zho"	"你已經是VIP了！"
+		"cze"	"Už jsi VIP!"
 	}
 
 	"VIP_RENEWAL_IS_NOT_AVAILABLE_YET"
@@ -23,6 +29,12 @@
 		"de"	"Du kannst die VIP-Funktionen in {1} erneut testen!"
 		"pt"	"Você poderá testar as funções VIP novamente em {1}!"
 		"chi"	"{1}后才能再次试用VIP功能！"
+		"pl"	"Możesz ponownie wypróbować funkcje VIP za {1}!"
+		"tr"	"VIP özelliklerini {1} sonra tekrar deneyebilirsin!"
+		"it"	"Potrai provare di nuovo le funzioni VIP tra {1}!"
+		"ua"	"Повторно спробувати VIP функції можна буде через {1}!"
+		"zho"	"{1}後才能再次試用VIP功能！"
+		"cze"	"VIP funkce můžeš znovu vyzkoušet za {1}!"
 	}
 
 	"VIP_RENEWAL_IS_DISABLED"
@@ -35,6 +47,12 @@
 		"de"	"VIP-Verlängerung ist deaktiviert!"
 		"pt"	"A renovação VIP está desativada!"
 		"chi"	"VIP续期已禁用！"
+		"pl"	"Odnawianie VIP jest wyłączone!"
+		"tr"	"VIP yenileme devre dışı!"
+		"it"	"Il rinnovo VIP è disabilitato!"
+		"ua"	"Повторне отримання VIP-статусу заборонено!"
+		"zho"	"VIP續期已停用！"
+		"cze"	"Obnovení VIP je vypnuto!"
 	}
 
 	"VIP_AUTH_FAILED"
@@ -47,6 +65,12 @@
 		"de"	"Deine SteamID konnte nicht überprüft werden. Versuche es später erneut."
 		"pt"	"Não foi possível verificar seu SteamID. Tente mais tarde."
 		"chi"	"无法验证你的SteamID。请稍后再试。"
+		"pl"	"Nie udało się zweryfikować Twojego SteamID. Spróbuj później."
+		"tr"	"SteamID'n doğrulanamadı. Daha sonra tekrar dene."
+		"it"	"Impossibile verificare il tuo SteamID. Riprova più tardi."
+		"ua"	"Не вдалося підтвердити ваш SteamID. Спробуйте пізніше."
+		"zho"	"無法驗證你的SteamID。請稍後再試。"
+		"cze"	"Tvé SteamID se nepodařilo ověřit. Zkus to později."
 	}
 
 	"VIP_DB_UNAVAILABLE"
@@ -59,5 +83,11 @@
 		"de"	"Die Datenbank ist nicht verfügbar. Versuche es später erneut."
 		"pt"	"O banco de dados está indisponível. Tente mais tarde."
 		"chi"	"数据库不可用。请稍后再试。"
+		"pl"	"Baza danych jest niedostępna. Spróbuj później."
+		"tr"	"Veritabanı kullanılamıyor. Daha sonra tekrar dene."
+		"it"	"Il database non è disponibile. Riprova più tardi."
+		"ua"	"База даних недоступна. Спробуйте пізніше."
+		"zho"	"資料庫無法使用。請稍後再試。"
+		"cze"	"Databáze není dostupná. Zkus to později."
 	}
 }
